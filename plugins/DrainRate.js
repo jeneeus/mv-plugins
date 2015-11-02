@@ -68,10 +68,10 @@ Jene.gameActionExecuteDamage = Game_Action.prototype.executeDamage;
 Game_Action.prototype.executeDamage = function(target, value) {
 	Jene.gameActionExecuteDamage.call(this, target, value);
     if (this.isHpEffect() && value > 0) {
-    	if (this.subject().dhr > 0 && !this.item().meta.dhr_exclude) {
+    	if (this.subject().dhr != 0 && !this.item().meta.dhr_exclude) {
         	this.subject().gainHp(Math.round(value * this.subject().dhr));
         }
-    	if (this.subject().dmr > 0 && !this.item().meta.dmr_exclude) {
+    	if (this.subject().dmr != 0 && !this.item().meta.dmr_exclude) {
         	this.subject().gainMp(Math.round(value * this.subject().dmr));
         }
     }
