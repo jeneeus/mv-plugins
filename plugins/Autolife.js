@@ -7,11 +7,11 @@ var Imported = Imported || {};
 var Jene = Jene || {};
 
 /*:
- * @plugindesc Special State: Autolife v1.0.1
+ * @plugindesc Special State: Autolife v1.1.0
  * @author Jeneeus Guruman
  *
  * @param Autolife Animation ID
- * @desc The ID of the animation to be played when KO-ed
+ * @desc The ID of the animation to be played when autoreviving.
  * @default 49
  *
  * @help
@@ -20,10 +20,11 @@ var Jene = Jene || {};
  *   revive the KO-ed target whenever the state is active. Once the
  *   target is automatically revive, the state will be removed.
  *
- *       <autolife: percent>
+ *       <autolife: value[%]>
  *
- *       percent: The percentage of amount to be modified with amount 
- *     of MaxHP to be recovered. Multiple tags will take the value 
+ *       value: The value of HP to be recovered to revive. Putting 
+ *     a percent sign will be based on the amount of MHP instead of 
+ *     fixed values. Multiple tags will take the value 
  *     of the tagged state that has the highest state priority.
  *
  *       Notes: 
@@ -31,12 +32,14 @@ var Jene = Jene || {};
  *
  *   Changelog:
  *
+ *     * v1.1.0: Now fixed numbers are accepted and adds a percent
+ *     sign for percentage values.
  *     * v1.0.1: Made compatible with Yanfly Engine Core.
  */
 
 parameters = PluginManager.parameters('Autolife');
 
-Jene.autolifeAnimationId = Number(parameters['Autolife Animation ID']);
+Jene.autolifeAnimationId = String(parameters['Autolife Animation ID']);
 
 Jene.battleManagerCheckBattleEnd = BattleManager.checkBattleEnd;
 
@@ -45,7 +48,7 @@ BattleManager.checkBattleEnd = function() {
 		if (actor.autolifeStateId() > 0) {
 			console.log(actor.mhp * actor.autolife);
 			actor.removeState(actor.deathStateId());
-			actor.gainHp(Math.round(actor.mhp * actor.autolife - 1));
+			actor.gainHp(actor.autolife);
 			actor.removeState(actor.autolifeStateId());
 			actor.startAnimation(Jene.autolifeAnimationId, true, $dataAnimations[Jene.autolifeAnimationId].frames * 4);
 			if (Imported.YEP_BattleEngineCore) {
@@ -56,7 +59,7 @@ BattleManager.checkBattleEnd = function() {
 	$gameTroop.deadMembers().forEach(function(enemy) {
 		if (enemy.autolifeStateId() > 0) {
 			enemy.removeState(enemy.deathStateId());
-			enemy.gainHp(Math.round(enemy.mhp * enemy.autolife - 1));
+			enemy.gainHp(enemy.autolife);
 			enemy.removeState(enemy.autolifeStateId());
 			enemy.startAnimation(Jene.autolifeAnimationId, false, $dataAnimations[Jene.autolifeAnimationId].frames * 4);
 			if (Imported.YEP_BattleEngineCore) {
@@ -70,7 +73,15 @@ BattleManager.checkBattleEnd = function() {
 Object.defineProperty(Game_BattlerBase.prototype, 'autolife', { 
 	get: function() {
 		if (this.autolifeStateId() > 0) {
-			return $dataStates[this.autolifeStateId()].meta.autolife / 100;
+			var state = $dataStates[this.autolifeStateId()];
+			var isPercent = state.meta.autolife.contains('%');
+			var value = Number(state.meta.autolife.replace('%', ''));
+			if (isPercent) {
+				return Math.ceil(this.mhp * value / 100) - 1;
+			}
+			else {
+				return Math.min(value, this.mhp) - 1;
+			}
 		}
 		else {
 			return 0;
