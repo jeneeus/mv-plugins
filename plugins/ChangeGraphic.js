@@ -6,18 +6,18 @@
 var Jene = Jene || {};
 
 /*:
- * @plugindesc Change Graphic v1.1.1
+ * @plugindesc Change Graphic v1.2.1
  * @author Jeneeus Guruman
  *
- * @param Change Default Graphic
+ * @param changeDefaultGraphic
  * @desc Enable changes of default graphics if changed using "Change Actor Graphic" command.
  * @default true
  *
- * @param Change Default Graphic Switch
+ * @param changeDefaultGraphicSwitch
  * @desc Switch to activate default graphic changes. 0 value makes it always enabled. 
  * @default 0
  *
- * @param Priority Equip Order
+ * @param priorityEquip
  * @desc The order of the equipment to be applied on changes, 
  * separated by spaces and arranged by "Equipment Types".
  * @default 1 5 4 3 2
@@ -49,9 +49,10 @@ var Jene = Jene || {};
  *
  *       To change sideview sprites:
  *
- *       <sve: battler_id, sideview_name>
+ *       <sve: [-]battler_id, sideview_name>
  *
- *       battler_id: The ID of the battler to be change sideview graphics.
+ *       battler_id: The ID of the actor to be change sideview graphics.
+ *       Placing a negative sign will call the enemy instead.
  *       sideview_name: The filename of the sideview graphic to be placed.
  *
  *       To change weapon animations:
@@ -75,19 +76,23 @@ var Jene = Jene || {};
  *       * The priority in "priorityEquip" is arranged from the highest 
  *       priority to the lowest.
  *       * "ae" tag only works on states.
+ *       * The actor sideview battler image to be changed must be in 
+ *       "sv_actors" folder while the enemy must be in "sv_enemies".
  *
  *   Changelog:
  *
- *     * v1.1.1: Renamed parameters to be readable easily.
+ *     * v1.2.1: Will now load all possible sideview battler changes at the 
+ *     start of the battle to remove the blinking bug.
+ *     * v1.2.0: Now enemies can be change their battler images.
  *     * v1.1.0: Added "ae" tag to also change weapon animations depending on 
  *     the actor's state.
  */
 
 parameters = PluginManager.parameters('ChangeGraphic');
 
-Jene.changeDefaultGraphic = Boolean(parameters['Change Default Graphic']);
-Jene.changeDefaultGraphicSwitch = Number(parameters['Change Default Graphic Switch']);
-Jene.priorityEquip = String(parameters['Priority Equip Order']);
+Jene.changeDefaultGraphic = Boolean(parameters['changeDefaultGraphic']);
+Jene.changeDefaultGraphicSwitch = Number(parameters['changeDefaultGraphicSwitch']);
+Jene.priorityEquip = String(parameters['priorityEquip']);
 
 Game_Actor.prototype.getAnimationChange = function(item, slotId) {
     var re = /<ae[:]?\s*(\d+)\s*[,]?\s*(\d+)?\s*[,]?\s*(\d+)?\s*>/gi;
@@ -308,41 +313,26 @@ Game_Actor.prototype.refreshGraphicEquip = function() {
       }
     }
 };
-/*
+
 Jene.gameEnemyBattlername = Game_Enemy.prototype.battlerName;
 
 Game_Enemy.prototype.battlerName = function() {
     var states = this.states();
     var name = "";
     for (var i = 0; i < states.length; i++) {
-      var dataArray = states[i].meta.ge.split(", ");
-      if (this._enemyId * -1 == dataArray[0] && states[i].meta.sve !== undefined) {
-        name = states[i].meta.sve.split(", ")[2];
-      }
+      var re = /<sve[:]?\s*[-](\d+)\s*[,]?\s*([$]*\w+)?\s*>/gi;
+      do {
+        var match = re.exec(states[i].note);
+        if (match && match[1] == this._enemyId) {
+          name = match[2];
+        }
+      } while (match);
     }
     if (name === "") {
-      return Jene.gameEnemyBattlername.call(this);
+      name = Jene.gameEnemyBattlername.call(this);
     }
-    else {
-      return name;
-    }
+    return name;
 };
-
-Jene.gameEnemyAddNewState = Game_Enemy.prototype.addNewState;
-
-Game_Enemy.prototype.addNewState = function(stateId) {
-    Jene.gameEnemyAddNewState.call(this, stateId);
-};
-
-Jene.gameEnemyEraseState = Game_Enemy.prototype.eraseState;
-
-Game_Enemy.prototype.eraseState = function(stateId) {
-    Jene.gameEnemyEraseState.call(this, stateId);
-};
-
-Game_Enemy.prototype.clearStates = function() {
-    Game_Battler.prototype.clearStates.call(this);
-};*/
 
 Jene.gamePartySetupStartingMembers = Game_Party.prototype.setupStartingMembers;
 
@@ -368,4 +358,23 @@ Game_Interpreter.prototype.command322 = function() {
     }
     $gamePlayer.refresh();
     return Jene.gameInterpreterCommand322.call(this);
+};
+
+Jene.spriteBattlerInitialize = Sprite_Battler.prototype.initialize;
+
+Sprite_Battler.prototype.initialize = function(battler) {
+  $dataStates.forEach(function(state) {
+      if (!state || !state.meta.sve) { return; }
+        var re = /<sve[:]?\s*([-]?\d+)\s*[,]?\s*([$]*\w+)?\s*>/gi;
+        do {
+            var match = re.exec(state.note);
+            if (match && match[1] > 0) {
+              ImageManager.loadSvActor(match[2]);
+            }
+            else if (match && -match[1] < 0) {
+              ImageManager.loadSvEnemy(match[2]);
+            }
+        } while (match);
+    }, this);
+  Jene.spriteBattlerInitialize.call(this, battler);
 };
