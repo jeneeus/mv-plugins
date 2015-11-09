@@ -6,7 +6,7 @@
 var Jene = Jene || {};
 
 /*:
- * @plugindesc Special Parameter: Drain Rate v1.0.0
+ * @plugindesc Special Parameter: Drain Rate v1.1.0
  * @author Jeneeus Guruman
  *
  * @help
@@ -27,16 +27,35 @@ var Jene = Jene || {};
  *     the damage. The default is 0. Multiple tags will add all values 
  *     by percentage (e.g. 200% + -50% = 150%).
  *
+ *       <dsr: percent>
+ *
+ *       percent: The percentage of amount of either HP or MP to be drained 
+ *     on the skills and items assigned. The default is 100.
+ *
  *       <dhr_exclude>
  *       <dmr_exclude>
  *
  *       Skills and items assigned to this will not drain any damage. 
  *
+ *       <dsr_switch>
+ *
+ *       Skills and items assigned to this will switch the restored value 
+ *     in draining skills and items (e.g. HP Drain damage will restore 
+ *     MP instead).
+ *
  *       Notes: 
  *       * This will only affect the damage formula and not the effects.
  *       * This can be placed with negative values and thus can be used as
  *       a recoil state instead.
- *       * Will only work on "HP Damage" damage type skills and items.
+ *       * "dhr" and "dsr" will only work on "HP Damage" damage type skills
+ *       and items.
+ *       * "dsr" will only work on "HP Drain" and "MP Drain" damage type 
+ *       skills.
+ *
+ *   Changelog:
+ *
+ *     * v1.1.0: Added "dsr" to manipulate the absorb percentage of skills 
+ *     and items and "dsr_switch" to swap the portion to be restored.
  */
 
 Object.defineProperty(Game_BattlerBase.prototype, 'dhr', { 
@@ -75,4 +94,39 @@ Game_Action.prototype.executeDamage = function(target, value) {
         	this.subject().gainMp(Math.round(value * this.subject().dmr));
         }
     }
+};
+
+Jene.gameActionGainedDrainedHp = Game_Action.prototype.gainDrainedHp;
+
+Game_Action.prototype.gainDrainedHp = function(value) {
+	var item = this.item();
+	if (!item.meta.dsr) {
+		Jene.gameActionGainedDrainedHp.call(this, value);
+	}
+	else {
+		console.log(item.meta.dsr);
+		if (item.meta.dsr_switch) {
+			this.subject().gainMp(Math.ceil(value * Number(item.meta.dsr) / 100));
+		}
+		else {
+			this.subject().gainHp(Math.ceil(value * Number(item.meta.dsr) / 100));
+		}
+	}
+};
+
+Jene.gameActionGainedDrainedMp = Game_Action.prototype.gainDrainedMp;
+
+Game_Action.prototype.gainDrainedMp = function(value) {
+	var item = this.item();
+	if (!item.meta.dsr) {
+		Jene.gameActionGainedDrainedMp.call(this, value);
+	}
+	else {	
+		if (item.meta.dsr_switch) {
+			this.subject().gainHp(Math.ceil(value * Number(item.meta.dsr) / 100));
+		}
+		else {
+			this.subject().gainMp(Math.ceil(value * Number(item.meta.dsr) / 100));
+		}
+	}
 };
