@@ -3,10 +3,11 @@
 // by: Jeneeus Guruman
 //------------------------------------------------------------------------------
 
+var Imported = Imported || {};
 var Jene = Jene || {};
 
 /*:
- * @plugindesc Change Graphic v1.2.1
+ * @plugindesc Change Graphic v1.2.2
  * @author Jeneeus Guruman
  *
  * @param changeDefaultGraphic
@@ -81,6 +82,7 @@ var Jene = Jene || {};
  *
  *   Changelog:
  *
+ *     * v1.2.2: Now compatible with Yanfly Item Core.
  *     * v1.2.1: Will now load all possible sideview battler changes at the 
  *     start of the battle to remove the blinking bug.
  *     * v1.2.0: Now enemies can be change their battler images.
@@ -93,6 +95,17 @@ parameters = PluginManager.parameters('ChangeGraphic');
 Jene.changeDefaultGraphic = Boolean(parameters['changeDefaultGraphic']);
 Jene.changeDefaultGraphicSwitch = Number(parameters['changeDefaultGraphicSwitch']);
 Jene.priorityEquip = String(parameters['priorityEquip']);
+
+if (Imported.YEP_ItemCore) {
+
+Jene.YEPItemManagerSetNewINdependentItem = ItemManager.setNewIndependentItem;
+
+ItemManager.setNewIndependentItem = function(baseItem, newItem) {
+    Jene.YEPItemManagerSetNewINdependentItem.call(this, baseItem, newItem);
+    newItem.note = baseItem.note;
+};
+
+}
 
 Game_Actor.prototype.getAnimationChange = function(item, slotId) {
     var re = /<ae[:]?\s*(\d+)\s*[,]?\s*(\d+)?\s*[,]?\s*(\d+)?\s*>/gi;
