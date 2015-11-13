@@ -19,18 +19,21 @@ var Jene = Jene || {};
  *
  *       percent: The percentage of amount of HP to be drained based on 
  *     the damage. The default is 0. Multiple tags will add all values 
- *     by percentage (e.g. 200% + -50% = 150%).
+ *     by percentage (e.g. 200% + -50% = 150%). Note: no percent sign 
+ *     should be added (e.g. <dhr: 50>).
  *
  *       <dmr: percent>
  *
  *       percent: The percentage of amount of MP to be drained based on 
  *     the damage. The default is 0. Multiple tags will add all values 
- *     by percentage (e.g. 200% + -50% = 150%).
+ *     by percentage (e.g. 200% + -50% = 150%). Note: no percent sign 
+ *     should be added (e.g. <dmr: 50>).
  *
  *       <dsr: percent>
  *
  *       percent: The percentage of amount of either HP or MP to be drained 
- *     on the skills and items assigned. The default is 100.
+ *     on the skills and items assigned. The default is 100. Note: no 
+ *     percent sign should be added (e.g. <dsr: 50>).
  *
  *       <dhr_exclude>
  *       <dmr_exclude>
