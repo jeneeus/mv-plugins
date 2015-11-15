@@ -7,7 +7,7 @@ var Imported = Imported || {};
 var Jene = Jene || {};
 
 /*:
- * @plugindesc Equip Battle Command v1.0.1
+ * @plugindesc Equip Battle Command v1.0.2
  * @author Jeneeus Guruman
  *
  * @help
@@ -20,6 +20,9 @@ var Jene = Jene || {};
  *
  *   Changelog:
  *
+ *     * v1.0.2: Fixed a bug that won't refresh the equip item list 
+ *     when the quantity of any equip altered ouside of the equip 
+ *     command.
  *     * v1.0.1: Now compatible with Yanfly's Equip Core.
  */
 
@@ -148,8 +151,8 @@ Scene_Battle.prototype.commandEquipment = function() {
     this._slotWindow.show();
     this._compareWindow.refresh();
     this._compareWindow.show();
+    this._equipItemWindow.refresh();
     this._equipCommandWindow.select(0);
-    this._actorCommandWindow.select(0);
 };
 
 Scene_Battle.prototype.commandEquip = function() {
@@ -323,8 +326,8 @@ Scene_Battle.prototype.commandEquipment = function() {
     this._slotWindow.refresh();
     this._slotWindow.show();
     this._equipItemWindow.show();
+    this._equipItemWindow.refresh();
     this._equipCommandWindow.select(0);
-    this._actorCommandWindow.select(0);
 };
 
 Scene_Battle.prototype.commandEquip = function() {
