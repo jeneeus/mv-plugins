@@ -21,7 +21,7 @@ var Jene = Jene || {};
  *   Changelog:
  *
  *     * v1.0.2: Fixed a bug that won't refresh the equip item list 
- *     when the quantity of any equip altered ouside of the equip 
+ *     when the quantity of any equip altered outside of the equip 
  *     command.
  *     * v1.0.1: Now compatible with Yanfly's Equip Core.
  */
