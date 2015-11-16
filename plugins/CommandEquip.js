@@ -7,8 +7,13 @@ var Imported = Imported || {};
 var Jene = Jene || {};
 
 /*:
- * @plugindesc Equip Battle Command v1.0.2
+ * @plugindesc Equip Battle Command v1.1.1
  * @author Jeneeus Guruman
+ *
+ * @param Unchangeable Types
+ * @desc The equipment types that cannot be changed in battle.
+ * Separate the IDs by spaces.
+ * @default 
  *
  * @help
  *
@@ -16,15 +21,40 @@ var Jene = Jene || {};
  *   
  *       Notes: 
  *       * Place this below scripts that alter the Equip layout but
- *       aboe other scripts.
+ *       above other scripts.
  *
  *   Changelog:
  *
+ *     * v1.1.1 Fixed a bug while using Yanfly's Equip Core that will
+ *     clear equipment even the unremovable ones and optimized them
+ *     even when set to not be optimized (special thanks to snorlord
+ *     for the help).
+ *     * v1.1.0: Now added "Unchangeable Types" parameter to exclude 
+ *     some slots to enable equip changes in battle.
  *     * v1.0.2: Fixed a bug that won't refresh the equip item list 
  *     when the quantity of any equip altered outside of the equip 
  *     command.
  *     * v1.0.1: Now compatible with Yanfly's Equip Core.
  */
+
+parameters = PluginManager.parameters('CommandEquip');
+
+Jene.unchangeableTypes = String(parameters['Unchangeable Types']);
+
+Jene.windowEquipSlotIsCurrentItemEnabled = Window_EquipSlot.prototype.isCurrentItemEnabled;
+
+Window_EquipSlot.prototype.isCurrentItemEnabled = function() {
+    var disabledSlots = [];
+    for (i=0; i < Jene.unchangeableTypes.split(" ").length; i++) {
+        disabledSlots.push(Number(Jene.unchangeableTypes.split(" ")[i]));
+    }
+    var etypeId = this._actor.equipSlots()[this.index()];
+    console.log(disabledSlots.contains(etypeId));
+    if ($gameParty.inBattle() && disabledSlots.contains(etypeId)) {
+        return false;
+    }
+    return this.isEnabled(this.index());
+};
 
 if (Imported.YEP_EquipCore) {
 
@@ -162,19 +192,35 @@ Scene_Battle.prototype.commandEquip = function() {
 };
 
 Scene_Battle.prototype.commandOptimize = function() {
+    $gameTemp._optimizeEquipments = true;
+    var hpRate = BattleManager.actor().hp / Math.max(1, BattleManager.actor().mhp);
+    var mpRate = BattleManager.actor().mp / Math.max(1, BattleManager.actor().mmp);
     SoundManager.playEquip();
     BattleManager.actor().optimizeEquipments();
     this._equipStatusWindow.refresh();
     this._slotWindow.refresh();
     this._equipCommandWindow.activate();
+    $gameTemp._optimizeEquipments = false;
+    BattleManager.actor().setHp(parseInt(BattleManager.actor().mhp * hpRate));
+        BattleManager.actor().setMp(parseInt(BattleManager.actor().mmp * mpRate));
+    this._compareWindow.refresh();
+    this._statusWindow.refresh();
 };
 
 Scene_Battle.prototype.commandClear = function() {
+    $gameTemp._clearEquipments = true;
+    var hpRate = BattleManager.actor().hp / Math.max(1, BattleManager.actor().mhp);
+    var mpRate = BattleManager.actor().mp / Math.max(1, BattleManager.actor().mmp);
     SoundManager.playEquip();
     BattleManager.actor().clearEquipments();
     this._equipStatusWindow.refresh();
     this._slotWindow.refresh();
     this._equipCommandWindow.activate();
+    $gameTemp._clearEquipments = false;
+    BattleManager.actor().setHp(parseInt(BattleManager.actor().mhp * hpRate));
+        BattleManager.actor().setMp(parseInt(BattleManager.actor().mmp * mpRate));
+    this._compareWindow.refresh();
+    this._statusWindow.refresh();
 };
 
 Scene_Battle.prototype.onSlotOk = function() {
@@ -197,6 +243,8 @@ Scene_Battle.prototype.commandEquipmentCancel = function() {
     this._equipItemWindow.hide();
     this._slotWindow.hide();
     this._compareWindow.hide();
+    this._actorCommandWindow.activate();
+    //this.selectPreviousCommand.bind(this);
 };
 
 Scene_Battle.prototype.onEquipItemOk = function() {
@@ -333,7 +381,6 @@ Scene_Battle.prototype.commandEquipment = function() {
 Scene_Battle.prototype.commandEquip = function() {
     this._slotWindow.refresh();
     this._slotWindow.activate();
-    this._slotWindow.select(0);
 };
 
 Scene_Battle.prototype.commandOptimize = function() {
@@ -368,6 +415,8 @@ Scene_Battle.prototype.commandEquipmentCancel = function() {
     this._equipStatusWindow.hide();
     this._equipItemWindow.hide();
     this._slotWindow.hide();
+    this._actorCommandWindow.activate();
+    //this.selectPreviousCommand.bind(this);
 };
 
 Scene_Battle.prototype.onEquipItemOk = function() {
